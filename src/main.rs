@@ -6,6 +6,23 @@ mod download;
 
 use std::fs;
 
+fn get_hosts(urls: &Vec<String>) -> String {
+    let mut all_hosts = String::new();
+
+    for url in urls.iter() {
+        let text: String;
+        if url.starts_with("file://") {
+            let file = url.strip_prefix("file://").unwrap();
+            text = fs::read_to_string(file).expect("Unable to open file");
+        } else {
+            text = download::download_text(url).expect("Error failed to download");
+        }
+        all_hosts.push_str(text.as_str());
+    }
+
+    all_hosts
+}
+
 fn main() -> Result<(), ()> {
 
     let matches = clap::Command::new("HostsManager")
@@ -41,13 +58,7 @@ fn main() -> Result<(), ()> {
     let out_file = matches.get_one::<String>("out").unwrap();
     let compression_level = matches.get_one::<String>("compression").unwrap().parse::<u16>().unwrap();
 
-    let mut all_hosts = String::new();
-
-    for url in urls.iter() {
-        println!("Downloading {}", url);
-        let text = download::download_text(url).expect("Error failed to download");
-        all_hosts.push_str(text.as_str());
-    }
+    let all_hosts = get_hosts(&urls);
 
     let hosts_hash = hosts::hosts_to_hashmap(all_hosts.as_str());
     
