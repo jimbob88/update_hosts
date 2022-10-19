@@ -47,6 +47,8 @@ pub fn hashmap_to_hosts<T: Into<Option<u16>>>(hashmap: &HashMap<String, HashSet<
 
 #[cfg(test)]
 mod tests {
+    use std::vec;
+
     use super::*;
 
     #[test]
@@ -117,4 +119,45 @@ mod tests {
         assert_eq!(values.sort(), vec!["127.0.0.1", "0.0.0.0"].sort());
     }
 
+    #[test]
+    fn test_hashmap_to_hosts_with_one_entry_returns_one_line() {
+        let mut test_hashmap: HashMap<String, HashSet<String>> = HashMap::new();
+
+        test_hashmap.insert("0.0.0.0".to_string(),HashSet::from_iter(vec!["127.0.0.1".to_string()]) );
+        
+        assert_eq!(hashmap_to_hosts(&test_hashmap, 1), "0.0.0.0 127.0.0.1\n")
+    }
+
+    #[test]
+    fn test_hashmap_to_hosts_with_two_entries_returns_two_lines_in_any_order() {
+        let mut test_hashmap: HashMap<String, HashSet<String>> = HashMap::new();
+
+        test_hashmap.insert("0.0.0.0".to_string(),
+                            HashSet::from_iter(vec!["127.0.0.1".to_string(), "128.0.0.1".to_string()])
+                        );
+        
+        // Order of Hashes are inderterminant
+        let hosts = hashmap_to_hosts(&test_hashmap, 1);
+
+        let order1 = hosts == "0.0.0.0 127.0.0.1\n0.0.0.0 128.0.0.1\n";
+        let order2 = hosts == "0.0.0.0 128.0.0.1\n0.0.0.0 127.0.0.1\n";
+
+        assert!(order1 || order2);
+    }
+
+    #[test]
+    fn test_hashmap_to_hosts_with_compression_level_2_makes_two_columns() {
+        let mut test_hashmap: HashMap<String, HashSet<String>> = HashMap::new();
+
+        test_hashmap.insert("0.0.0.0".to_string(),
+                            HashSet::from_iter(vec!["127.0.0.1".to_string(), "128.0.0.1".to_string()])
+                        );
+        
+        let hosts = hashmap_to_hosts(&test_hashmap, 2);
+        // Order of Hashes are inderterminant
+        let order1 = hosts == "0.0.0.0 127.0.0.1 128.0.0.1\n";
+        let order2 = hosts == "0.0.0.0 128.0.0.1 127.0.0.1\n";
+
+        assert!(order1 || order2);
+    }
 }
