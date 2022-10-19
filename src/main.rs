@@ -39,6 +39,20 @@ fn hosts_to_hashmap(hosts: &str) -> HashMap<String, HashSet<String>> {
     hash
 }
 
+fn hashmap_to_hosts<T: Into<Option<u16>>>(hashmap: &HashMap<String, HashSet<String>>, compression_level: T) -> String {
+    let compression: usize = compression_level.into().unwrap_or(9) as usize;
+
+    let mut hosts_text = String::new();
+
+    for (destination, addresses) in hashmap.iter() {
+        let addr_vec: Vec<String> = addresses.into_iter().map(|s| s.to_owned()).collect();
+        for chunk in addr_vec.chunks(compression) {
+            hosts_text.push_str(f!("{destination} {sources}\n", sources=chunk.join(" ")).as_str()) 
+        }
+    }
+    hosts_text
+}
+
 fn main() -> Result<(), ureq::Error> {
     let mut urls: Vec<String> = Vec::new();
     urls.push(String::from("https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts"));
@@ -55,14 +69,7 @@ fn main() -> Result<(), ureq::Error> {
 
     let hosts_hash = hosts_to_hashmap(all_hosts.as_str());
     
-    let mut hosts_text = String::new();
-
-    for (destination, addresses) in hosts_hash.iter() {
-        let addr_vec: Vec<String> = addresses.into_iter().map(|s| s.to_owned()).collect();
-        for chunk in addr_vec.chunks(compression_level) {
-            hosts_text.push_str(f!("{destination} {sources}\n", sources=chunk.join(" ")).as_str()) 
-        }
-    }
+    let hosts_text = hashmap_to_hosts(&hosts_hash, compression_level);
 
     fs::write("hosts", hosts_text).expect("Expected Hosts file to be writable");
 
