@@ -1,6 +1,12 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+/// Given a string, returns the string without any comments
+/// 
+/// # Examples
+/// ```
+/// hosts::remove_comments("0.0.0.0 127.0.0.1 # Testing Comments");
+/// ```
 pub fn remove_comments(line: &str) -> String {
     for (idx, chr) in line.chars().enumerate() {
         if chr == '#' {
@@ -10,6 +16,33 @@ pub fn remove_comments(line: &str) -> String {
     return line.trim().to_string();
 }
 
+/// Converts a HostsFile string to a hashmap
+/// 
+/// # Theory
+/// This is based off the idea that one hosts file might have a lot of different
+/// destinations: For example, you may simply be using yours hosts file as a 
+/// sink for ads/tracking etc, but you could also be using it to redirect 
+/// `ff02::2 ip6-allrouters` and `::1 localhost ip6-localhost ip6-loopback` so
+/// this hashmap is used like a Python Dictionary.
+/// 
+/// # Example
+/// ```
+/// let hosts_file = "
+/// ::1 localhost ip6-localhost ip6-loopback
+/// ff02::2 ip6-allrouters
+/// 0.0.0.0 metrics.avalara.com # Source: Steven Black's Hosts
+/// ";
+/// let hashmap = hosts_to_hashmap(hosts_file);
+/// ```
+/// 
+/// This will return [in JSON notation]:
+/// ```json
+/// {
+///     "::1": ["localhost", "ip6-localhost", "ip6-loopback"],
+///     "ff02::2": ["ip6-allrouters"],
+///     "0.0.0.0": ["metrics.avalara.com"] 
+/// }
+/// ```
 pub fn hosts_to_hashmap(hosts: &str) -> HashMap<String, HashSet<String>> {
     let mut hash: HashMap<String, HashSet<String>> = HashMap::new();
     for line in hosts.lines() {
@@ -28,6 +61,66 @@ pub fn hosts_to_hashmap(hosts: &str) -> HashMap<String, HashSet<String>> {
     hash
 }
 
+/// Converts a hashmap [like one created by hosts_to_hashmap] to a hosts file
+/// 
+/// # Theory
+/// In converting to a hashmap as an intermediate, it allows duplicates to be 
+/// removed from huge datasets.
+/// 
+/// ## What is `compression_level` and why is it needed?
+/// Compression level sets the number of columns you want (n + 1) for your 
+/// hosts file. For example 3 columns:
+/// ```
+/// 0.0.0.0 addr1 addr2 addr3
+/// ```
+/// 
+/// And with 2 columns:
+/// ```
+/// 0.0.0.0 addr1 addr2
+/// 0.0.0.0 addr3
+/// ```
+/// 
+/// This is especially useful for Windows 10 systems (I am not sure about other
+/// versions of windows but they are likely the same). The DNS Agent in Windows
+/// is ancient and takes **a long time** to traverse large hosts files. If you 
+/// are using a 4mb file, expect DNS lookups to take tens of seconds. This is 
+/// obviously not enough performance in the modern day, so if you increase the
+/// number of columns in each file, the DNS agent's algorithm seems to read them
+/// much more effectively. I'd recommend setting your compression_level to 9 as 
+/// this seems to give pretty consistent speeds. This is the same compression
+/// used by [Unified Hosts Auto Update](https://github.com/ScriptTiger/Unified-Hosts-AutoUpdate)
+/// 
+/// # Example
+/// If you had a hosts hashmap like the following [in JSON notation]:
+/// ```json
+/// {
+///     "0.0.0.0": ["192.168.1.1", "182.1.1.0"],
+///     "::1": ["localhost"]
+/// }
+/// ```
+/// 
+/// If you had a level 2 compression (2-col compression):
+/// ```
+/// let x = hashmap_to_hosts(example_hosts, 2);
+/// ```
+/// 
+/// `x` would look like so:
+/// ```
+/// 0.0.0.0 192.168.1.1 182.1.1.0
+/// ::1 localhost
+/// ```
+/// 
+/// And when you have just level 1 compression (1-col compression):
+/// ```
+/// let x = hashmap_to_hosts(example_hosts, 1);
+/// ```
+/// 
+/// `x` would look like so:
+/// ```
+/// 0.0.0.0 192.168.1.1
+/// 0.0.0.0 182.1.1.0
+/// ::1 localhost
+/// ```
 pub fn hashmap_to_hosts<T: Into<Option<u16>>>(hashmap: &HashMap<String, HashSet<String>>, compression_level: T) -> String {
     let compression: usize = compression_level.into().unwrap_or(9) as usize;
 
@@ -44,6 +137,7 @@ pub fn hashmap_to_hosts<T: Into<Option<u16>>>(hashmap: &HashMap<String, HashSet<
     hosts_text
 }
 
+/// Removes all common elements from two hashmaps
 pub fn ignore(hashmap: &mut HashMap<String, HashSet<String>>, ignore: &HashMap<String, HashSet<String>>) {
     let empty_hash: HashSet<String> = HashSet::new();
 

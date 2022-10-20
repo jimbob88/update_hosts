@@ -1,3 +1,9 @@
+//! Fast & Simple Hosts Management
+//! 
+//! A piece of software for downloading and updating hosts files. I am no kind
+//! of authority in Rust, I am merely trying to learn the language. A similar
+//! version of this software can be found for Python in my GitHub Gists.
+
 #[macro_use]
 extern crate fstrings;
 
@@ -6,6 +12,12 @@ mod download;
 
 use std::fs;
 
+/// Downloads host files into one long host file
+/// 
+/// # Arguments
+/// * `urls` - A list of urls (these can be local urls using `file://`) i.e.
+/// <file:///etc/hosts> will open the hosts. And "<https://www.example.com/host>" 
+/// will download from the website "example.com".
 fn get_hosts(urls: &Vec<String>) -> String {
     let mut all_hosts = String::new();
 
@@ -23,7 +35,23 @@ fn get_hosts(urls: &Vec<String>) -> String {
     all_hosts
 }
 
-fn main() -> Result<(), ()> {
+/// This is where the magic happens!
+/// 
+/// # The Command Line Interface
+/// ```
+/// A piece of software for updating hosts files
+/// 
+/// Usage: update_hosts2.exe [OPTIONS] --urls <urls>...
+/// 
+/// Options:
+///   -u, --urls <urls>...                   A list of files to download
+///   -o, --out <out>                        Where to write the file to [default: hosts]
+///   -c, --compression_level <compression>  The number of columns to use [default: 9]
+///   -i, --ignore [<ignore>...]             Select urls/files to use as an ignore list
+///   -h, --help                             Print help information
+///   -V, --version                          Print version information
+/// ```
+pub fn main() -> Result<(), ()> {
     let matches = clap::Command::new("HostsManager")
                     .version("0.0.1")
                     .about("A piece of software for updating hosts files")
@@ -87,6 +115,6 @@ fn main() -> Result<(), ()> {
     fs::write(out_file, hosts_text).expect("Expected Hosts file to be writable");
 
 
-    println!("Hello, world!");
+    println!("Cya!");
     Ok(())
 }
