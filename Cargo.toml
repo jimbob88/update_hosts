@@ -12,4 +12,5 @@ fstrings = {version = "0.2.3"}
 clap = { version = "4.0", features = ["derive"] }
 
 [profile.release]
-debug = 1
+lto = true
+codegen-units = 1
