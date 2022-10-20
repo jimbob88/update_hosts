@@ -44,6 +44,15 @@ pub fn hashmap_to_hosts<T: Into<Option<u16>>>(hashmap: &HashMap<String, HashSet<
     hosts_text
 }
 
+pub fn ignore(hashmap: &mut HashMap<String, HashSet<String>>, ignore: &HashMap<String, HashSet<String>>) {
+    let empty_hash: HashSet<String> = HashSet::new();
+
+    for (destination, addresses) in hashmap.iter_mut() {
+        let ignore_list = ignore.get(destination).unwrap_or(&empty_hash);
+        let addr: HashSet<String> = HashSet::from_iter(addresses.difference(&ignore_list).map(|v| v.to_owned()));
+        addresses.clone_from(&addr);
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -86,8 +95,9 @@ mod tests {
         let hashmap = hosts_to_hashmap(test_string);
 
         let mut values: Vec<String> = hashmap.get("0.0.0.0").unwrap().into_iter().map(|v| v.to_string()).collect();
+        values.sort();
 
-        assert_eq!(values.sort(), vec!["127.0.0.1", "192.168.1.1"].sort());
+        assert_eq!(values, vec!["127.0.0.1", "192.168.1.1"]);
     }
 
     #[test]
@@ -100,8 +110,9 @@ mod tests {
         let hashmap = hosts_to_hashmap(test_string);
 
         let mut values: Vec<String> = hashmap.keys().map(|v| v.to_string()).collect();
+        values.sort();
 
-        assert_eq!(values.sort(), vec!["127.0.0.1", "0.0.0.0"].sort());
+        assert_eq!(values, vec!["0.0.0.0", "127.0.0.1"]);
     }
 
     
@@ -115,8 +126,9 @@ mod tests {
         let hashmap = hosts_to_hashmap(test_string);
 
         let mut values: Vec<String> = hashmap.keys().map(|v| v.to_string()).collect();
+        values.sort();
 
-        assert_eq!(values.sort(), vec!["127.0.0.1", "0.0.0.0"].sort());
+        assert_eq!(values, vec!["0.0.0.0", "127.0.0.1"]);
     }
 
     #[test]
@@ -159,5 +171,28 @@ mod tests {
         let order2 = hosts == "0.0.0.0 128.0.0.1 127.0.0.1\n";
 
         assert!(order1 || order2);
+    }
+
+    #[test]
+    fn test_ignore_removes_common_values() {
+        let mut test_hashmap: HashMap<String, HashSet<String>> = HashMap::new();
+
+        test_hashmap.insert("0.0.0.0".to_string(),
+                            HashSet::from_iter(vec!["127.0.0.1".to_string(), "128.0.0.1".to_string()])
+                        );
+
+        let mut ignore_hashmap: HashMap<String, HashSet<String>> = HashMap::new();
+        ignore_hashmap.insert("0.0.0.0".to_string(),
+            HashSet::from_iter(vec!["128.0.0.1".to_string()])
+        );
+
+        ignore(&mut test_hashmap, &ignore_hashmap);
+
+        let mut values: Vec<String> = test_hashmap.get("0.0.0.0").unwrap().into_iter().map(|v| v.to_string()).collect();
+        values.sort();
+
+
+        assert_eq!(values, vec!["127.0.0.1"]);
+
     }
 }

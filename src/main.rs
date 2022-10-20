@@ -24,7 +24,6 @@ fn get_hosts(urls: &Vec<String>) -> String {
 }
 
 fn main() -> Result<(), ()> {
-
     let matches = clap::Command::new("HostsManager")
                     .version("0.0.1")
                     .about("A piece of software for updating hosts files")
@@ -51,17 +50,38 @@ fn main() -> Result<(), ()> {
                             .help("The number of columns to use")
                             .allow_negative_numbers(false)
                     )
+                    .arg(
+                        clap::Arg::new("ignore")
+                            .short('i')
+                            .long("ignore")
+                            .default_value(None)
+                            .help("Select urls/files to use as an ignore list")
+                            .num_args(0..)
+                            .required(false)
+                    )
                     .get_matches();
 
 
     let urls: Vec<String> = matches.get_many::<String>("urls").unwrap().map(|v| v.to_owned()).collect();
     let out_file = matches.get_one::<String>("out").unwrap();
     let compression_level = matches.get_one::<String>("compression").unwrap().parse::<u16>().unwrap();
+    let ignore_list: Vec<String> = {
+        let ign = matches.get_many::<String>("ignore");
+        if let Some(x) = ign {
+            x.map(|v| v.to_owned()).collect()
+        } else {
+            vec![]
+        }
+    };
 
     let all_hosts = get_hosts(&urls);
+    let all_ignore = get_hosts(&ignore_list);
 
-    let hosts_hash = hosts::hosts_to_hashmap(all_hosts.as_str());
+    let mut hosts_hash = hosts::hosts_to_hashmap(all_hosts.as_str());
+    let ignore_hash = hosts::hosts_to_hashmap(all_ignore.as_str());
     
+    hosts::ignore(&mut hosts_hash, &ignore_hash);
+
     let hosts_text = hosts::hashmap_to_hosts(&hosts_hash, compression_level);
 
     fs::write(out_file, hosts_text).expect("Expected Hosts file to be writable");
