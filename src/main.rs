@@ -53,7 +53,7 @@ fn get_hosts(urls: &Vec<String>) -> String {
 /// ```
 pub fn main() -> Result<(), ()> {
     let matches = clap::Command::new("HostsManager")
-                    .version("0.0.1")
+                    .version("1.0.0")
                     .about("A piece of software for updating hosts files")
                     .arg(
                         clap::Arg::new("urls")
