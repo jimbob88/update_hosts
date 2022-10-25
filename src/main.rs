@@ -98,7 +98,7 @@ pub fn main() -> Result<(), ()> {
         if let Some(x) = ign {
             x.map(|v| v.to_owned()).collect()
         } else {
-            vec![]
+            Vec::new()
         }
     };
 
