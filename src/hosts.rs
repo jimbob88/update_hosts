@@ -127,9 +127,9 @@ pub fn hashmap_to_hosts<T: Into<Option<u16>>>(hashmap: &HashMap<String, HashSet<
     let mut hosts_text = String::new();
 
     for (destination, addresses) in hashmap.iter() {
-        let addr_vec: Vec<String> = addresses.into_iter().map(|s| s.to_owned()).collect();
+        let addr_vec: Vec<String> = addresses.iter().map(|s| s.to_owned()).collect();
         for chunk in addr_vec.chunks(compression) {
-            if chunk.len() > 0 {
+            if !chunk.is_empty() {
                 hosts_text.push_str(f!("{destination} {sources}\n", sources=chunk.join(" ")).as_str()) 
             }
         }
@@ -143,7 +143,7 @@ pub fn ignore(hashmap: &mut HashMap<String, HashSet<String>>, ignore: &HashMap<S
 
     for (destination, addresses) in hashmap.iter_mut() {
         let ignore_list = ignore.get(destination).unwrap_or(&empty_hash);
-        let addr: HashSet<String> = HashSet::from_iter(addresses.difference(&ignore_list).map(|v| v.to_owned()));
+        let addr: HashSet<String> = HashSet::from_iter(addresses.difference(ignore_list).map(|v| v.to_owned()));
         addresses.clone_from(&addr);
     }
 }

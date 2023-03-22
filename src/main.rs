@@ -18,17 +18,17 @@ use std::fs;
 /// * `urls` - A list of urls (these can be local urls using `file://`) i.e.
 /// <file:///etc/hosts> will open the hosts. And "<https://www.example.com/host>" 
 /// will download from the website "example.com".
-fn get_hosts(urls: &Vec<String>) -> String {
+fn get_hosts(urls: &[String]) -> String {
     let mut all_hosts = String::new();
 
     for url in urls.iter() {
-        let text: String;
-        if url.starts_with("file://") {
+        let text: String = if url.starts_with("file://") {
             let file = url.strip_prefix("file://").unwrap();
-            text = fs::read_to_string(file).expect("Unable to open file");
+            fs::read_to_string(file).expect("Unable to open file")
         } else {
-            text = download::download_text(url).expect("Error failed to download");
-        }
+            download::download_text(url).expect("Error failed to download")
+        };
+
         all_hosts.push_str(text.as_str());
     }
 
@@ -51,7 +51,7 @@ fn get_hosts(urls: &Vec<String>) -> String {
 ///   -h, --help                             Print help information
 ///   -V, --version                          Print version information
 /// ```
-pub fn main() -> Result<(), ()> {
+pub fn main() {
     let matches = clap::Command::new("HostsManager")
                     .version("1.0.0")
                     .about("A piece of software for updating hosts files")
@@ -116,5 +116,4 @@ pub fn main() -> Result<(), ()> {
 
 
     println!("Cya!");
-    Ok(())
 }
