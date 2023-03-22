@@ -19,20 +19,15 @@ use std::fs;
 /// <file:///etc/hosts> will open the hosts. And "<https://www.example.com/host>" 
 /// will download from the website "example.com".
 fn get_hosts(urls: &[String]) -> String {
-    let mut all_hosts = String::new();
-
-    for url in urls.iter() {
+    urls.iter().fold("".to_string(), |acc, url| {
         let text: String = if url.starts_with("file://") {
             let file = url.strip_prefix("file://").unwrap();
             fs::read_to_string(file).expect("Unable to open file")
         } else {
             download::download_text(url).expect("Error failed to download")
         };
-
-        all_hosts.push_str(text.as_str());
-    }
-
-    all_hosts
+        acc + text.as_str()
+    })
 }
 
 /// This is where the magic happens!
