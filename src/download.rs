@@ -2,6 +2,7 @@
 pub fn download_text(url: &str) -> Result<String, ureq::Error> {
     let body: String = ureq::get(url)
         .call()?
-        .into_string()?;
+        .body_mut()
+        .read_to_string()?;
     Ok(body)
 }
